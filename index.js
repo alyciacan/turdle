@@ -3,6 +3,7 @@ var winningWord = '';
 var currentRow = 1;
 var guess = '';
 var gamesPlayed = [];
+var dictionary;
 
 // Query Selectors
 var inputs = document.querySelectorAll('input');
@@ -43,11 +44,14 @@ viewStatsButton.addEventListener('click', viewStats);
 
 const fetchData = fetch('http://localhost:3001/api/v1/words')
     .then(response => response.json())
-    .then(wordArray => wordArray)
+    .then(wordArray => {
+      dictionary = wordArray;
+      return wordArray
+    })
     .catch(error => alert("There was an error!"));
 
 
-function setGame() { //called on load, doesn't have the array yet
+function setGame() { 
   currentRow = 1;
   console.log(winningWord);
   updateInputPermissions();
@@ -120,7 +124,7 @@ function checkIsWord() {
     }
   }
 
-  return words.includes(guess);
+  return dictionary.includes(guess);
 }
 
 function compareGuess() {
