@@ -52,6 +52,7 @@ function getRandomWord() {
 }
 
 function updateInputPermissions() { //when game is set, loop thru input boxes and disable all except current row
+  
   for(var i = 0; i < inputs.length; i++) {
     if(!inputs[i].id.includes(`-${currentRow}-`)) {
       inputs[i].disabled = true;
@@ -71,10 +72,12 @@ function focusOnFirstBox() {
   currentRowInputs[0].focus();
 }
 
-function moveToNextInput(e) { //called on keyup for each letter box, seems to work ok
-  var key = e.keyCode || e.charCode;
+function moveToNextInput(e) { //called on keyup for each letter box, seems to work BUT needs to go back if e.keycode =
+  var key = e.keyCode || e.charCode; //charCode is deprecated, why's it still here?
   if( key !== 8 && key !== 46 ) {
-    var indexOfNext = parseInt(e.target.id.split('-')[2]) + 1;
+    console.log(e.target.id);
+    var indexOfNext = parseInt(e.target.id.split('-')[2]) + 1
+    console.log(indexOfNext);
     inputs[indexOfNext].focus();
   }
 }
