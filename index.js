@@ -3,6 +3,7 @@ var winningWord = '';
 var currentRow = 1;
 var guess = '';
 var gamesPlayed = [];
+var dictionary;
 
 // Query Selectors
 var inputs = document.querySelectorAll('input'); // these are each letter box in all rows
@@ -21,7 +22,7 @@ var gameOverGuessCount = document.querySelector('#game-over-guesses-count');
 var gameOverGuessGrammar = document.querySelector('#game-over-guesses-plural');
 
 // Event Listeners
-window.addEventListener('load', setGame);
+window.addEventListener('load', getRandomWord);
 
 for (var i = 0; i < inputs.length; i++) {
   inputs[i].addEventListener('keyup', function() { moveToNextInput(event) });
@@ -40,15 +41,28 @@ viewGameButton.addEventListener('click', viewGame);
 viewStatsButton.addEventListener('click', viewStats);
 
 // Functions
-function setGame() { //happens on load, assigns global vars currentRow and winningWord
+
+const fetchData = fetch('http://localhost:3001/api/v1/words')
+    .then(response => response.json())
+    .then(wordArray => {
+      dictionary = wordArray;
+      return wordArray
+    })
+    .catch(error => alert("There was an error!"));
+
+
+function setGame() { 
   currentRow = 1;
-  winningWord = getRandomWord();
+  console.log(winningWord);
   updateInputPermissions();
 }
 
 function getRandomWord() {
-  var randomIndex = Math.floor(Math.random() * 2500);
-  return words[randomIndex];
+  fetchData.then((n) => {
+    var randomIndex = Math.floor(Math.random() * n.length);
+    winningWord = n[randomIndex];
+    setGame()
+  })
 }
 
 function updateInputPermissions() { //when game is set, loop thru input boxes and disable all except current row
@@ -120,7 +134,7 @@ function checkIsWord() {
     }
   }
 
-  return words.includes(guess);
+  return dictionary.includes(guess);
 }
 
 function compareGuess() {
@@ -198,7 +212,7 @@ function changeGameOverText() {
 function startNewGame() {
   clearGameBoard();
   clearKey();
-  setGame();
+  getRandomWord();
   viewGame();
   inputs[0].focus();
 }
