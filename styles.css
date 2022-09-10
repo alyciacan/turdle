@@ -28,7 +28,7 @@ body {
 
 main {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-around;
 }
 
 p {
@@ -39,7 +39,8 @@ p {
 #game-section,
 #rules-section,
 #stats-section,
-#game-over-section,
+#game-over-section-win,
+#game-over-section-lose,
 nav {
   width: 33%;
 }
@@ -165,7 +166,8 @@ nav {
 
 #rules-section,
 #stats-section,
-#game-over-section {
+#game-over-section-lose,
+#game-over-section-win {
   text-align: center;
 }
 

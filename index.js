@@ -17,20 +17,26 @@ var gameBoard = document.querySelector('#game-section');
 var letterKey = document.querySelector('#key-section');
 var rules = document.querySelector('#rules-section');
 var stats = document.querySelector('#stats-section');
-var gameOverBox = document.querySelector('#game-over-section');
+var totalGamesDisplay = document.querySelector('#stats-total-games');
+var statsPercentWon = document.querySelector('#stats-percent-correct');
+var statsAvgGuesses = document.querySelector('#stats-average-guesses');
+var gameOverBoxWin = document.querySelector('#game-over-section-win');
+var gameOverBoxLose = document.querySelector('#game-over-section-lose');
+var gameOverHeader = document.querySelector('#game-over-message');
 var gameOverGuessCount = document.querySelector('#game-over-guesses-count');
 var gameOverGuessGrammar = document.querySelector('#game-over-guesses-plural');
+var wordGiveaway = document.querySelector('.word-giveaway');
 
 // Event Listeners
 window.addEventListener('load', getRandomWord);
 
-for (var i = 0; i < inputs.length; i++) {
-  inputs[i].addEventListener('keyup', function() { moveToNextInput(event) });
-}
+inputs.forEach(input => {
+  input.addEventListener('keyup', function() { moveToNextInput(event) });
+})
 
-for (var i = 0; i < keyLetters.length; i++) {
-  keyLetters[i].addEventListener('click', function() { clickLetter(event) });
-}
+keyLetters.forEach(keyLetter => {
+  keyLetter.addEventListener('click', function() { clickLetter(event) });
+})
 
 guessButton.addEventListener('click', submitGuess);
 
@@ -49,12 +55,14 @@ const fetchData = fetch('http://localhost:3001/api/v1/words')
       return wordArray
     })
     .catch(error => alert("There was an error!"));
+//promise.all makes everything wait till all the promises are resolved
+//fetching from multiple data sets you'll be displaying on load
 
-
-function setGame() { 
+function setGame() {
   currentRow = 1;
-  console.log(winningWord);
+  wordGiveaway.innerText = winningWord;
   updateInputPermissions();
+  console.log(winningWord);
 }
 
 function getRandomWord() {
@@ -66,14 +74,13 @@ function getRandomWord() {
 }
 
 function updateInputPermissions() { //when game is set, loop thru input boxes and disable all except current row
-  
-  for(var i = 0; i < inputs.length; i++) {
-    if(!inputs[i].id.includes(`-${currentRow}-`)) {
-      inputs[i].disabled = true;
+  inputs.forEach(input => {
+    if(!input.id.includes(`-${currentRow}-`)) {
+      input.disabled = true;
     } else {
-      inputs[i].disabled = false;
+      input.disabled = false;
     }
-  }
+  })
   focusOnFirstBox();
 }
 
@@ -89,23 +96,16 @@ function focusOnFirstBox() {
 function moveToNextInput(e) { //called on keyup for each letter box, seems to work BUT needs to go back if e.keycode =
   var key = e.keyCode || e.charCode; //charCode is deprecated, why's it still here?
   if( key !== 8 && key !== 46 ) {
-    console.log(e.target.id);
     var indexOfNext = parseInt(e.target.id.split('-')[2]) + 1
-    console.log(indexOfNext);
-    inputs[indexOfNext].focus();
+    inputs[indexOfNext].focus(); //doesn't know what to do at end of game
   }
 }
 
 function clickLetter(e) {
-  var activeInput = null;
-  var activeIndex = null;
-
-  for (var i = 0; i < inputs.length; i++) {
-    if(inputs[i].id.includes(`-${currentRow}-`) && !inputs[i].value && !activeInput) {
-      activeInput = inputs[i];
-      activeIndex = i;
-    }
-  }
+  var activeInput = inputs.find(input => {
+    return input.id.includes(`-${currentRow}-`) && !input.value && !activeInput
+  })
+  var activeIndex = inputs.indexOf(activeInput);
 
   activeInput.value = e.target.innerText;
   inputs[activeIndex + 1].focus();
@@ -116,7 +116,13 @@ function submitGuess() {
     errorMessage.innerText = '';
     compareGuess();
     if (checkForWin()) {
-      setTimeout(declareWinner, 1000);
+      setTimeout(function() {
+        declareWinnerOrLoser('win')
+      }, 1000);
+    } else if (currentRow === 6) {
+      setTimeout(function() {
+        declareWinnerOrLoser('lose')
+      }, 1000);
     } else {
       changeRow();
     }
@@ -128,54 +134,45 @@ function submitGuess() {
 function checkIsWord() {
   guess = '';
 
-  for(var i = 0; i < inputs.length; i++) {
-    if(inputs[i].id.includes(`-${currentRow}-`)) {
-      guess += inputs[i].value;
+  inputs.forEach(input => {
+    if (input.id.includes(`-${currentRow}-`)) {
+      guess += input.value
     }
-  }
-
-  return dictionary.includes(guess);
+  })
+    return dictionary.includes(guess);
 }
 
 function compareGuess() {
   var guessLetters = guess.split('');
 
-  for (var i = 0; i < guessLetters.length; i++) {
-
-    if (winningWord.includes(guessLetters[i]) && winningWord.split('')[i] !== guessLetters[i]) {
-      updateBoxColor(i, 'wrong-location');
-      updateKeyColor(guessLetters[i], 'wrong-location-key');
-    } else if (winningWord.split('')[i] === guessLetters[i]) {
-      updateBoxColor(i, 'correct-location');
-      updateKeyColor(guessLetters[i], 'correct-location-key');
+  guessLetters.forEach(guessLetter => {
+    const index = guessLetters.indexOf(guessLetter);
+    if (winningWord.includes(guessLetter) && winningWord.split('')[index] !== guessLetters[index]) {
+      updateBoxColor(index, 'wrong-location');
+      updateKeyColor(guessLetter, 'wrong-location-key');
+    } else if (winningWord.split('')[index] === guessLetter) {
+      updateBoxColor(index, 'correct-location');
+      updateKeyColor(guessLetter, 'correct-location-key');
     } else {
-      updateBoxColor(i, 'wrong');
-      updateKeyColor(guessLetters[i], 'wrong-key');
+      updateBoxColor(index, 'wrong');
+      updateKeyColor(guessLetter, 'wrong-key');
     }
-  }
+  })
 
 }
 
-function updateBoxColor(letterLocation, className) {
-  var row = [];
-
-  for (var i = 0; i < inputs.length; i++) {
-    if(inputs[i].id.includes(`-${currentRow}-`)) {
-      row.push(inputs[i]);
-    }
-  }
+function updateBoxColor(letterLocation, className) { //u, corr loc
+  var row = Array
+    .from(inputs)
+    .filter(input => input.id.includes(`-${currentRow}-`));
 
   row[letterLocation].classList.add(className);
 }
 
 function updateKeyColor(letter, className) {
-  var keyLetter = null;
-
-  for (var i = 0; i < keyLetters.length; i++) {
-    if (keyLetters[i].innerText === letter) {
-      keyLetter = keyLetters[i];
-    }
-  }
+  var keyLetter = Array
+    .from(keyLetters)
+    .find(keyLetter => keyLetter.innerText === letter);
 
   keyLetter.classList.add(className);
 }
@@ -189,15 +186,46 @@ function changeRow() { //updates currentrow, enables all except current row. Why
   updateInputPermissions();
 }
 
-function declareWinner() {
-  recordGameStats();
+function declareWinnerOrLoser(result) {
+  recordGameStats(result);
   changeGameOverText();
-  viewGameOverMessage();
+  viewGameOverMessage(result);
   setTimeout(startNewGame, 4000);
 }
 
-function recordGameStats() {
-  gamesPlayed.push({ solved: true, guesses: currentRow });
+function recordGameStats(result) {
+  if (result === "win") {
+    gamesPlayed.push({ solved: true, guesses: currentRow });
+  } else {
+    gamesPlayed.push({solved: false, guesses: currentRow });
+  }
+  updateStats();
+}
+
+function getAvgWinStats() {
+  const totalWonGames = gamesPlayed.reduce((sum, gameObj) => {
+    if(gameObj.solved) {
+      sum ++
+    }
+    return sum;
+  }, 0)
+  statsPercentWon.innerText = (totalWonGames / gamesPlayed.length) * 100;
+}
+
+function getAvgNumGuesses() {
+  const totalGuesses = gamesPlayed.reduce((sum, gameObj) => {
+    if(gameObj.solved) {
+      sum += gameObj.guesses;
+    }
+    return sum;
+  }, 0)
+  statsAvgGuesses.innerText = (totalGuesses / gamesPlayed.length)
+}
+
+function updateStats() {
+  totalGamesDisplay.innerText = gamesPlayed.length;
+  getAvgWinStats();
+  getAvgNumGuesses();
 }
 
 function changeGameOverText() {
@@ -218,16 +246,16 @@ function startNewGame() {
 }
 
 function clearGameBoard() {
-  for (var i = 0; i < inputs.length; i++) {
-    inputs[i].value = '';
-    inputs[i].classList.remove('correct-location', 'wrong-location', 'wrong');
-  }
+  inputs.forEach(input => {
+    input.value = '';
+    input.classList.remove('correct-location', 'wrong-location', 'wrong');
+  })
 }
 
 function clearKey() {
-  for (var i = 0; i < keyLetters.length; i++) {
-    keyLetters[i].classList.remove('correct-location-key', 'wrong-location-key', 'wrong-key');
-  }
+  Array.from(keyLetters).forEach(keyLetter => {
+    keyLetter.classList.remove('correct-location-key', 'wrong-location-key', 'wrong-key');
+  })
 }
 
 // Change Page View Functions
@@ -247,7 +275,8 @@ function viewGame() {
   gameBoard.classList.remove('collapsed');
   rules.classList.add('collapsed');
   stats.classList.add('collapsed');
-  gameOverBox.classList.add('collapsed')
+  gameOverBoxLose.classList.add('collapsed')
+  gameOverBoxWin.classList.add('collapsed')
   viewGameButton.classList.add('active');
   viewRulesButton.classList.remove('active');
   viewStatsButton.classList.remove('active');
@@ -263,8 +292,14 @@ function viewStats() {
   viewStatsButton.classList.add('active');
 }
 
-function viewGameOverMessage() {
-  gameOverBox.classList.remove('collapsed')
-  letterKey.classList.add('hidden');
-  gameBoard.classList.add('collapsed');
+function viewGameOverMessage(result) {
+  if (result === 'win') {
+    gameOverBoxWin.classList.remove('collapsed')
+    letterKey.classList.add('hidden');
+    gameBoard.classList.add('collapsed');
+  } else {
+    gameOverBoxLose.classList.remove('collapsed')
+    letterKey.classList.add('hidden');
+    gameBoard.classList.add('collapsed');
+  }
 }
